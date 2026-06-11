@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parcel Operations Dashboard</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+  <link rel="icon" href="icon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <meta name="theme-color" content="#2b2f37" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <link rel="stylesheet" href="styles.bundle.v21.css" />
+</head>
+<body data-page="overview">
+  <aside class="sidebar">
+    <div class="brand"><div class="mark">PO</div><div><h1>Parcel Operations</h1><span>Monitoring Workspace</span></div></div>
+    <nav class="nav"><a class="nav-item active" href="#overview"><span>01</span>ภาพรวม</a><a class="nav-item " href="#status"><span>02</span>สถานะและกราฟ</a><a class="nav-item " href="#fd"><span>03</span>FD / สาขา</a><a class="nav-item " href="#lh"><span>04</span>LH / HUB อื่น</a><a class="nav-item " href="#records"><span>05</span>รายการพัสดุ</a><a class="nav-item " href="#export"><span>06</span>ส่งออก</a></nav>
+    <div class="side-note"><b>ใช้ข้อมูลร่วมกันทุกหน้า</b><span>เลือกไฟล์ครั้งเดียว ใช้ต่อได้ทั้งรายงาน • หากเปลี่ยนชุดข้อมูลให้กดล้างข้อมูลเดิม</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><p class="eyebrow">Parcel Operations Dashboard</p><h1>ตรวจสอบพัสดุค้างดำเนินการ</h1></div>
+      <div class="report-time"><label for="reportTime">เวลารายงาน</label><input id="reportTime" type="datetime-local" /></div>
+    </header>
+
+    <section class="upload-card">
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden />
+      <button id="chooseFileBtn" type="button" class="upload-btn"><span>เลือกไฟล์ข้อมูลดิบ</span><small id="fileName">ยังไม่ได้เลือกไฟล์ Excel</small></button>
+      <button id="clearDataBtn" type="button" class="clear-data-btn" title="ล้างข้อมูล Excel ที่เบราว์เซอร์จำไว้ แล้วเริ่มใหม่">ล้างข้อมูลเดิม</button>
+      <div id="statusCard" class="file-status"><b>พร้อมใช้งาน</b><span>รองรับ Excel / CSV และใช้งานร่วมกันทุกหน้า</span></div>
+    </section>
+
+    <section id="controls" class="filter-card" hidden>
+      <div class="filter-title"><div><h2>ตัวกรองรายงาน</h2><p>เลือกเงื่อนไขจากค่าจริงในไฟล์ และเลือกสาขาหรือ HUB ที่ต้องการตรวจสอบ</p></div><div class="toolbar"><button id="resetBtn" class="btn ghost" type="button">ล้างตัวกรอง</button><button id="copyBtn" class="btn ghost" type="button">คัดลอกสรุป</button><button id="exportBtn" class="btn soft" type="button">CSV</button><button id="exportXlsxBtn" class="btn primary" type="button">Export Excel</button></div></div>
+      <div class="filter-grid">
+        <label class="field wide"><span>ค้นหาทุกคอลัมน์</span><input id="searchInput" type="search" placeholder="เลขพัสดุ / สาขา / HUB / เบอร์ / ลูกค้า / สถานะ" /></label>
+        <label class="field"><span>สาขา / HUB ที่ต้องการตรวจ</span><select id="baseHubFilter"><option value="all">ยังไม่เลือก</option></select></label>
+        <label class="field"><span>ประเภทมุมมอง</span><select id="modeFilter"><option value="all">ทั้งหมดตามตัวกรอง</option><option value="fd-base">FD เฉพาะสาขา/HUB ที่เลือก</option><option value="lh-other">LH เฉพาะปลายทางอื่น</option><option value="missing-manager">รายการข้อมูลผู้ดำเนินการไม่ครบ</option></select></label>
+        <label class="field"><span>กลุ่มเวลา</span><select id="agingFilter"><option value="all">ทุกช่วงเวลา</option></select></label>
+        <label class="field"><span>HUB ปลายทาง</span><select id="hubFilter"><option value="all">ทุก HUB</option></select></label>
+        <label class="field"><span>สถานะดำเนินการล่าสุด</span><select id="actionFilter"><option value="all">ทุกสถานะ</option></select></label>
+        <label class="field"><span>รูปแบบรายงานไลน์</span><select id="copyLineMode">
+          <optgroup label="รายงานสรุป">
+            <option value="aging" selected>สรุปเวลาในคลัง</option>
+            <option value="count">สรุปจำนวนชิ้น</option>
+            <option value="both">สรุปเวลาในคลัง + จำนวนชิ้น</option>
+          </optgroup>
+        </select></label>
+        <label class="field compact-field"><span>ขนาดรายงาน</span><select id="copyLineLimit">
+          <optgroup label="แนะนำสำหรับ LINE">
+            <option value="10">Top 10 + รวมที่เหลือ</option>
+            <option value="15">Top 15 + รวมที่เหลือ</option>
+            <option value="20">Top 20 + รวมที่เหลือ</option>
+          </optgroup>
+          <optgroup label="รายงานเต็ม">
+            <option value="all" selected>ทั้งหมด</option>
+          </optgroup>
+        </select></label>
+        <div class="field report-focus-field"><span>กลุ่มเวลาที่ต้องการรายงาน</span>
+          <div class="check-grid aging-check-grid" id="copyReportFocusGroup">
+            <label><input type="checkbox" name="copyReportFocus" value="all" checked> ทุกช่วงเวลา</label>
+            <label><input type="checkbox" name="copyReportFocus" value="le6"> ≤6 ชม.</label>
+            <label><input type="checkbox" name="copyReportFocus" value="le12"> ≤12 ชม.</label>
+            <label><input type="checkbox" name="copyReportFocus" value="le22"> ≤22 ชม.</label>
+            <label><input type="checkbox" name="copyReportFocus" value="between22_24"> 22–24 ชม.</label>
+            <label><input type="checkbox" name="copyReportFocus" value="over24"> >24 ชม.</label>
+            <label><input type="checkbox" name="copyReportFocus" value="over48"> >48 ชม.</label>
+          </div>
+        </div>
+        <label class="field compact-field"><span>เลขพัสดุในรายงาน</span><select id="copyTrackMode">
+          <optgroup label="เหมาะกับส่ง LINE">
+            <option value="sample">ตัวอย่าง 5 เลข/ช่วงเวลา</option>
+          </optgroup>
+          <optgroup label="รายงานเต็ม">
+            <option value="all" selected>เลขพัสดุทั้งหมด</option>
+          </optgroup>
+        </select></label>
+        <div class="field manager wide2"><div class="field-line"><span>ผู้ดำเนินการล่าสุด / เบอร์ / รหัส</span><b id="managerSelectedCount">ทุกค่า</b></div><input id="managerSearch" type="search" placeholder="ค้นหาในรายการ เช่น (6), TH27..., 063..., ชื่อสาขา" /><div class="mini-actions"><button id="selectVisibleManagers" type="button">เลือกที่เห็น</button><button id="clearManagers" type="button">ล้างรายการเลือก</button></div><div id="managerChecklist" class="checklist"></div></div>
+      </div>
+    </section>
+    <section id="content" class="spa-content" hidden>
+<div class="page-panel active" data-page-panel="overview">
+<section class="page-head">
+        <div><p class="section-kicker">ภาพรวมงานค้าง</p><h2>สรุปงานค้างตามเงื่อนไข</h2><p>ดูจำนวนรวม แยกช่วงเวลา และสรุปตาม HUB ปลายทางจากข้อมูลดิบที่นำเข้า</p></div>
+        <div class="capture-group"><span id="summaryContext" class="context-pill">รอข้อมูล</span><button class="btn ghost capture-btn" type="button" data-capture-target="overviewSnapshot" data-capture-name="overview-summary">บันทึกภาพสรุป</button></div>
+      </section>
+      <section id="overviewSnapshot">
+        <div id="kpiGrid" class="kpi-grid"></div>
+        <section class="content-card">
+          <div class="card-head"><div><h3>สรุปตาม HUB ปลายทาง</h3><p>เรียงจากจำนวนรายการมากไปน้อย</p></div><div class="capture-group"><span id="hubCount" class="badge">0 HUB</span><button class="btn line-copy-btn" type="button" data-copy-table="hubSummaryTable" data-copy-title="สรุปตาม HUB ปลายทาง">คัดลอกไลน์งาน</button><button class="btn table-btn" type="button" data-capture-target="hubSummaryCard" data-capture-name="hub-summary">บันทึกตาราง</button></div></div>
+          <div id="hubSummaryCard" class="table-capture frame-card"><div class="table-wrap"><table id="hubSummaryTable"></table></div></div>
+        </section>
+      </section>
+</div>
+<div class="page-panel" data-page-panel="status">
+<section class="page-head">
+        <div>
+          <p class="section-kicker">Status & Charts</p>
+          <h2>สถานะดำเนินการล่าสุด และกราฟงานค้าง</h2>
+          <p>ใช้คอลัมน์ “การดำเนินการล่าสุด” เป็นหลัก และแยก FD/LH ตามสาขา / HUB ที่ต้องการตรวจ</p>
+        </div>
+        <div class="capture-group">
+          <span id="chartContext" class="context-pill">รอข้อมูล</span>
+          <button class="btn ghost capture-btn" type="button" data-capture-target="statusBoard" data-capture-name="status-dashboard">บันทึกภาพทั้งหน้า</button>
+        </div>
+      </section>
+
+      <section id="statusBoard">
+        <div class="mini-kpi-grid">
+          <article class="mini-kpi"><span>สถานะดำเนินการล่าสุด</span><b id="statusTypeCount">0</b><small>นับจากคอลัมน์การดำเนินการล่าสุด</small></article>
+          <article class="mini-kpi"><span>สาขา FD ที่ติด</span><b id="branchAffectedCount">0</b><small>ปลายทางตรงกับสาขา / HUB ที่เลือก</small></article>
+          <article class="mini-kpi"><span>HUB อื่นที่ติด LH</span><b id="lhHubAffectedCount">0</b><small>ปลายทางไม่ตรงกับสาขา / HUB ที่เลือก</small></article>
+          <article class="mini-kpi"><span>สถานะมากที่สุด</span><b id="topStatusCount">0</b><small id="topStatusLabel">-</small></article>
+        </div>
+
+        <div class="chart-grid">
+          <section class="chart-card" id="statusChartCard">
+            <div class="card-head">
+              <div><h3>Top สถานะดำเนินการล่าสุด</h3><p>แสดงเฉพาะรายการอันดับต้น เพื่อให้อ่านง่าย ไม่ทับกัน</p></div>
+              <button class="btn table-btn" type="button" data-capture-target="statusChartCard" data-capture-name="latest-action-chart">บันทึกกราฟ</button>
+            </div>
+            <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+          </section>
+
+          <section class="chart-card" id="branchChartCard">
+            <div class="card-head">
+              <div><h3>FD: จำนวนพัสดุค้างตามสาขาปลายทาง</h3><p>คิดเฉพาะรายการที่ HUB ปลายทางตรงกับ “สาขา / HUB ที่ต้องการตรวจ”</p></div>
+              <button class="btn table-btn" type="button" data-capture-target="branchChartCard" data-capture-name="fd-branch-chart">บันทึกกราฟ</button>
+            </div>
+            <div class="chart-wrap chart-wrap-tall"><canvas id="branchChart"></canvas></div>
+          </section>
+
+          <section class="chart-card chart-wide" id="lhChartCard">
+            <div class="card-head">
+              <div><h3>LH: จำนวนพัสดุค้างตาม HUB ปลายทางอื่น</h3><p>ใช้หลักเดียวกับหน้า LH / HUB อื่น คือปลายทางไม่ตรงกับสาขา / HUB ที่เลือก</p></div>
+              <button class="btn table-btn" type="button" data-capture-target="lhChartCard" data-capture-name="lh-other-hub-chart">บันทึกกราฟ</button>
+            </div>
+            <div class="chart-wrap chart-wrap-tall"><canvas id="lhChart"></canvas></div>
+          </section>
+        </div>
+
+        <section class="content-card">
+          <div class="card-head">
+            <div><h3>ตารางสรุปสถานะดำเนินการล่าสุด</h3><p>ใช้ตรวจสอบตัวเลขจากคอลัมน์ “การดำเนินการล่าสุด”</p></div>
+            <div class="capture-group">
+              <button class="btn line-copy-btn" type="button" data-copy-table="statusSummaryTable" data-copy-title="สรุปสถานะดำเนินการล่าสุด">คัดลอกไลน์งาน</button>
+              <button class="btn table-btn" type="button" data-capture-target="statusSummaryBox" data-capture-name="latest-action-table">บันทึกตาราง</button>
+            </div>
+          </div>
+          <div id="statusSummaryBox" class="table-capture frame-card"><div class="table-wrap"><table id="statusSummaryTable"></table></div></div>
+        </section>
+
+        <section class="content-card">
+          <div class="card-head">
+            <div><h3>ตาราง FD ตามสาขาปลายทาง</h3><p>เฉพาะปลายทางตรงกับสาขา / HUB ที่เลือก</p></div>
+            <div class="capture-group">
+              <button class="btn line-copy-btn" type="button" data-copy-table="fdBranchStatusTable" data-copy-title="FD สรุปตามสาขาปลายทาง">คัดลอกไลน์งาน</button>
+              <button class="btn table-btn" type="button" data-capture-target="fdBranchTableBox" data-capture-name="fd-branch-table">บันทึกตาราง</button>
+            </div>
+          </div>
+          <div id="fdBranchTableBox" class="table-capture frame-card"><div class="table-wrap"><table id="fdBranchStatusTable"></table></div></div>
+        </section>
+
+        <section class="content-card">
+          <div class="card-head">
+            <div><h3>ตาราง LH ตาม HUB ปลายทางอื่น</h3><p>เหมือนหน้า LH / HUB อื่น</p></div>
+            <div class="capture-group">
+              <button class="btn line-copy-btn" type="button" data-copy-table="lhHubStatusTable" data-copy-title="LH สรุป HUB ปลายทางอื่น">คัดลอกไลน์งาน</button>
+              <button class="btn table-btn" type="button" data-capture-target="lhHubTableBox" data-capture-name="lh-hub-table">บันทึกตาราง</button>
+            </div>
+          </div>
+          <div id="lhHubTableBox" class="table-capture frame-card"><div class="table-wrap"><table id="lhHubStatusTable"></table></div></div>
+        </section>
+      </section>
+</div>
+<div class="page-panel" data-page-panel="fd">
+<section class="page-head">
+        <div><p class="section-kicker">FD / Destination Branch</p><h2>FD เฉพาะสาขา/HUB ที่เลือก</h2><p>แสดงรายการที่ HUB ปลายทางตรงกับค่าที่เลือก แล้วสรุปตามสาขาปลายทาง</p></div>
+        <div class="capture-group"><span id="fdCount" class="context-pill">0 รายการ</span><button class="btn ghost capture-btn" type="button" data-capture-target="fdSummaryCard" data-capture-name="fd-summary">บันทึกภาพหน้านี้</button></div>
+      </section>
+      <section class="content-card advice"><b>การใช้งาน:</b> เลือก “สาขา / HUB ที่ต้องการตรวจ” จากแถบตัวกรองด้านบนก่อน ระบบจะแยกเฉพาะปลายทางตรงกับค่านั้น</section>
+      <section id="fdSummaryCard" class="content-card table-capture">
+        <div class="card-head"><div><h3>สรุปตามสาขาปลายทาง</h3><p>เหมาะสำหรับตรวจงาน FD รายสาขา</p></div><button class="btn line-copy-btn" type="button" data-copy-table="branchSummaryTable" data-copy-title="FD สรุปตามสาขาปลายทาง">คัดลอกไลน์งาน</button><button class="btn table-btn" type="button" data-capture-target="fdSummaryCard" data-capture-name="fd-table">บันทึกตาราง</button></div>
+        <div class="table-wrap"><table id="branchSummaryTable"></table></div>
+      </section>
+</div>
+<div class="page-panel" data-page-panel="lh">
+<section class="page-head">
+        <div><p class="section-kicker">LH / Other HUB</p><h2>LH เฉพาะปลายทางอื่น</h2><p>ใช้เปรียบเทียบรายการที่ปลายทางไม่ตรงกับสาขาหรือ HUB ที่เลือก</p></div>
+        <div class="capture-group"><span id="lhOtherCount" class="context-pill">0 รายการ</span><button class="btn ghost capture-btn" type="button" data-capture-target="lhSummaryCard" data-capture-name="lh-summary">บันทึกภาพหน้านี้</button></div>
+      </section>
+      <section class="content-card advice"><b>การใช้งาน:</b> ถ้าเลือกสาขา/HUB แล้ว ระบบจะดึงเฉพาะรายการที่ปลายทางไม่ตรงกับค่านั้น เพื่อช่วยตรวจสอบ LH ได้สะดวกขึ้น</section>
+      <section id="lhSummaryCard" class="content-card table-capture">
+        <div class="card-head"><div><h3>สรุป HUB ปลายทางอื่น</h3><p>เหมาะสำหรับตรวจงาน LH ระหว่าง HUB</p></div><button class="btn line-copy-btn" type="button" data-copy-table="lhOtherTable" data-copy-title="LH สรุป HUB ปลายทางอื่น">คัดลอกไลน์งาน</button><button class="btn table-btn" type="button" data-capture-target="lhSummaryCard" data-capture-name="lh-table">บันทึกตาราง</button></div>
+        <div class="table-wrap"><table id="lhOtherTable"></table></div>
+      </section>
+</div>
+<div class="page-panel" data-page-panel="records">
+<section class="page-head">
+        <div><p class="section-kicker">Parcel Detail</p><h2>รายการพัสดุตามเงื่อนไข</h2><p>ตารางหน้าเว็บแสดงแบบกระชับ ส่วน Export Excel จะเก็บรายละเอียดครบทุกคอลัมน์</p></div>
+        <div class="capture-group"><span id="rowCount" class="context-pill">0 รายการ</span><button class="btn ghost capture-btn" type="button" data-capture-target="recordsCaptureArea" data-capture-name="records-table">บันทึกภาพตาราง</button></div>
+      </section>
+      <section class="record-tools records-toolbar">
+        <div class="record-tool-group primary-tool">
+          <label class="field slim"><span>จัดเรียงตาราง</span><select id="sortFilter"><option value="hours-desc">ชั่วโมงค้างมาก → น้อย</option><option value="hours-asc">ชั่วโมงค้างน้อย → มาก</option><option value="latest-desc">เวลาดำเนินการล่าสุด → ใหม่สุด</option><option value="latest-asc">เวลาดำเนินการล่าสุด → เก่าสุด</option><option value="tracking-asc">เลขพัสดุ A → Z</option><option value="original">เรียงตามไฟล์เดิม</option></select></label>
+        </div>
+        <div class="record-tool-group toggle-group">
+          <label><input id="showAllCols" type="checkbox" /> แสดงครบทุกคอลัมน์</label>
+          <label><input id="cleanThCodes" type="checkbox" checked /> ซ่อนรหัส (TH...)</label>
+          <label><input id="editMode" type="checkbox" /> แก้ไขในตาราง</label>
+          <label><input id="compactRows" type="checkbox" checked /> แถวกระชับ</label>
+        </div>
+        <span id="editCount" class="edit-status">ยังไม่มีการแก้ไข</span>
+      </section>
+      <section id="recordsCaptureArea" class="content-card table-capture">
+        <div class="card-head"><div><h3>รายการพัสดุ</h3><p>จัดลำดับคอลัมน์ใหม่ให้อ่านง่าย โดยตรึงเลขพัสดุไว้ด้านซ้าย</p></div><button class="btn line-copy-btn" type="button" data-copy-records-report="1">คัดลอกไลน์งาน</button><button class="btn table-btn" type="button" data-capture-target="recordsCaptureArea" data-capture-name="records-current-page">บันทึกภาพหน้านี้</button></div>
+        <div class="table-wrap detail detail-pro"><table id="detailTable" class="ops-detail-table"></table></div>
+        <div class="pager"><button id="prevPage" class="btn ghost" type="button">ก่อนหน้า</button><span id="pageInfo">หน้า 1 / 1</span><button id="nextPage" class="btn ghost" type="button">ถัดไป</button></div>
+      </section>
+</div>
+<div class="page-panel" data-page-panel="export">
+<section class="page-head">
+        <div><p class="section-kicker">Export</p><h2>ส่งออกข้อมูลรายงาน</h2><p>Excel จะมีทั้งสรุปและรายละเอียดครบทุกคอลัมน์ โดยจัดคอลัมน์สำคัญไว้ด้านหน้า</p></div>
+        <div class="capture-group"><span id="exportContext" class="context-pill">พร้อมส่งออก</span><button class="btn ghost capture-btn" type="button" data-capture-target="exportGuide" data-capture-name="export-guide">บันทึกภาพส่วนนี้</button></div>
+      </section>
+      <div class="export-grid">
+        <article class="export-card"><h3>Excel Report</h3><p>ส่งออกหลายชีต: Summary, Detail_All, FD_Selected, LH_Other, By_HUB, By_Branch_FD, By_Status และ By_Aging</p><button id="exportXlsxBtn2" class="btn primary" type="button">Export Excel</button></article>
+        <article class="export-card"><h3>CSV Detail</h3><p>ส่งออกรายการตามตัวกรองปัจจุบัน สำหรับนำไปใช้งานต่อ</p><button id="exportBtn2" class="btn soft" type="button">Export CSV</button></article>
+        <article class="export-card"><h3>สรุปส่งงาน</h3><p>คัดลอกสรุปแบบอ่านง่าย ไม่ใส่ชื่อบุคคลหรือเบอร์โทรในบรรทัดเงื่อนไข</p><button id="copyBtn2" class="btn ghost" type="button">คัดลอกสรุป</button></article>
+      </div>
+      <section id="exportGuide" class="content-card table-capture"><h3>รายละเอียดในไฟล์ Excel</h3><ul class="export-list"><li>วันที่และเวลาที่เกี่ยวข้อง</li><li>เลขพัสดุ / สถานะ / การดำเนินการล่าสุด</li><li>น้ำหนัก</li><li>HUB ปลายทาง / สาขาปลายทาง</li><li>เวลาที่ใช้คำนวณ / จำนวนชั่วโมงค้างใน HUB / กลุ่มเวลา</li><li>สรุปตาม HUB, สรุปสาขา FD, สรุปสถานะพัสดุ และข้อมูลดิบอื่น ๆ ครบทุกคอลัมน์ต่อท้าย</li></ul></section>
+</div>
+    </section>
+  </main>
+  <div id="toast" class="toast" hidden></div>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <script src="app.bundle.v21.js"></script>
+</body>
+</html>

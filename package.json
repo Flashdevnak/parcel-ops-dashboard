@@ -1,0 +1,1 @@
+{"scripts":{"start":"python -m http.server 5173"},"dependencies":{},"devDependencies":{},"name":"parcel-ops-dashboard","version":"12.0.0"}
